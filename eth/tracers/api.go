@@ -1017,14 +1017,14 @@ func (api *API) TraceCall(ctx context.Context, args ethapi.TransactionArgs, bloc
 	if hash, ok := blockNrOrHash.Hash(); ok {
 		block, err = api.blockByHash(ctx, hash)
 	} else if number, ok := blockNrOrHash.Number(); ok {
-		if number == rpc.PendingBlockNumber {
-			// We don't have access to the miner here. For tracing 'future' transactions,
-			// it can be done with block- and state-overrides instead, which offers
-			// more flexibility and stability than trying to trace on 'pending', since
-			// the contents of 'pending' is unstable and probably not a true representation
-			// of what the next actual block is likely to contain.
-			return nil, errors.New("tracing on top of pending is not supported")
-		}
+		// if number == rpc.PendingBlockNumber {
+		// 	// We don't have access to the miner here. For tracing 'future' transactions,
+		// 	// it can be done with block- and state-overrides instead, which offers
+		// 	// more flexibility and stability than trying to trace on 'pending', since
+		// 	// the contents of 'pending' is unstable and probably not a true representation
+		// 	// of what the next actual block is likely to contain.
+		// 	return nil, errors.New("tracing on top of pending is not supported")
+		// }
 		block, err = api.blockByNumber(ctx, number)
 	} else {
 		return nil, errors.New("invalid arguments; neither block nor hash specified")
@@ -1060,6 +1060,11 @@ func (api *API) TraceCall(ctx context.Context, args ethapi.TransactionArgs, bloc
 	}
 
 	vmctx := core.NewEVMBlockContext(block.Header(), api.chainContext(ctx), nil)
+	if number, _ := blockNrOrHash.Number(); number  == rpc.PendingBlockNumber {
+		vmctx.BlockNumber.Add(vmctx.BlockNumber, big.NewInt(1));
+		vmctx.Time = vmctx.Time + 3;
+		vmctx.GetHash = customGetHashFn(block.Header(), api.chainContext(ctx))
+	}
 	// Apply the customization rules if required.
 	if config != nil {
 		if err := config.StateOverrides.Apply(statedb); err != nil {
@@ -1159,7 +1164,7 @@ func (api *API) TraceBundle(ctx context.Context, args []*ethapi.TransactionArgs,
 			TxIndex:     i,
 		}
 		
-		res, err := api.traceTx(ctx, msg, txctx, blockCtx, statedb, traceConfig)
+		res, err := api.traceTx(ctx, msg, txctx, blockCtx, statedb, traceConfig, false)
 		// if err != nil {
 		// 	return nil, err
 		// }
