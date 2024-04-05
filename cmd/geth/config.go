@@ -198,6 +198,14 @@ func makeFullNode(ctx *cli.Context) (*node.Node, ethapi.Backend) {
 		v := ctx.Uint64(utils.OverrideVerkle.Name)
 		cfg.Eth.OverrideVerkle = &v
 	}
+	if ctx.IsSet(utils.OverrideFeynman.Name) {
+		v := ctx.Uint64(utils.OverrideFeynman.Name)
+		cfg.Eth.OverrideFeynman = &v
+	}
+	if ctx.IsSet(utils.OverrideFeynmanFix.Name) {
+		v := ctx.Uint64(utils.OverrideFeynmanFix.Name)
+		cfg.Eth.OverrideFeynmanFix = &v
+	}
 	backend, _ := utils.RegisterEthService(stack, &cfg.Eth)
 
 	// Configure log filter RPC API.
