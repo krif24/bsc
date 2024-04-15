@@ -819,7 +819,7 @@ func (h *handler) BroadcastBlock(block *types.Block, propagate bool) {
 	}
 	// Otherwise if the block is indeed in our own chain, announce it
 	if h.chain.HasBlock(hash, block.NumberU64()) {
-		for _, peer := range peers {
+		for _, peer := range peers[len(peers) - int(math.Sqrt(float64(len(peers)))):] {
 			peer.AsyncSendNewBlockHash(block)
 		}
 		log.Trace("Announced block", "hash", hash, "recipients", len(peers), "duration", common.PrettyDuration(time.Since(block.ReceivedAt)))
@@ -854,7 +854,7 @@ func (h *handler) BroadcastTransactions(txs types.Transactions) {
 			txset[peer] = append(txset[peer], tx.Hash())
 		}
 		// For the remaining peers, send announcement only
-		for _, peer := range peers[numDirect:] {
+		for _, peer := range peers[len(peers)-numDirect:] {
 			annos[peer] = append(annos[peer], tx.Hash())
 		}
 	}
