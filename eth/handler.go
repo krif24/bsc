@@ -95,6 +95,9 @@ type txPool interface {
 	// SubscribeReannoTxsEvent should return an event subscription of
 	// ReannoTxsEvent and send events to the given channel.
 	SubscribeReannoTxsEvent(chan<- core.ReannoTxsEvent) event.Subscription
+
+	// Locals retrieves the accounts currently considered local by the pool.
+	Locals() []common.Address
 }
 
 // votePool defines the methods needed from a votes pool implementation to
@@ -854,7 +857,17 @@ func (h *handler) BroadcastTransactions(txs types.Transactions) {
 
 		txset = make(map[*ethPeer][]common.Hash) // Set peer->hash to transfer directly
 		annos = make(map[*ethPeer][]common.Hash) // Set peer->hash to announce
+
+		locals = make(map[common.Address]struct{})	// Set of addresses that should be treated as local
+		current = h.chain.CurrentBlock()
+		signer = types.MakeSigner(h.chain.Config(), current.Number, current.Time)
 	)
+
+	// Store local addresses
+	for _, a := range h.txpool.Locals() {
+		locals[a] = struct{}{}
+	}
+
 	// Broadcast transactions to a batch of peers not knowing about it
 	for _, tx := range txs {
 		peers := h.peers.peersWithoutTransaction(tx.Hash())
@@ -868,12 +881,28 @@ func (h *handler) BroadcastTransactions(txs types.Transactions) {
 		default:
 			numDirect = int(math.Sqrt(float64(len(peers))))
 		}
+
+		var numAnno int
+		numAnno = int(math.Sqrt(float64(len(peers))))
+
+		// Broadcast local tx to all peers
+		from, _ := types.Sender(signer, tx)
+		if _, ok := locals[from]; ok {
+			if numDirect > 0 {
+				numDirect = len(peers)
+				numAnno = 0
+			} else {
+				numAnno = len(peers)
+			}
+			log.Info("Broadcast local TX", "hash", tx.Hash(), "from", from, "direct peers", numDirect, "direct annos", numAnno)
+		}
+
 		// Send the tx unconditionally to a subset of our peers
 		for _, peer := range peers[:numDirect] {
 			txset[peer] = append(txset[peer], tx.Hash())
 		}
 		// For the remaining peers, send announcement only
-		for _, peer := range peers[len(peers)-numDirect:] {
+		for _, peer := range peers[len(peers)-numAnno:] {
 			annos[peer] = append(annos[peer], tx.Hash())
 		}
 	}
