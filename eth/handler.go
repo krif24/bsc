@@ -24,6 +24,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+	"sort"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/consensus"
@@ -885,7 +886,17 @@ func (h *handler) BroadcastTransactions(txs types.Transactions) {
 			annos[peer] = append(annos[peer], tx.Hash())
 		}
 	}
-	for peer, hashes := range txset {
+
+	sortedPeers := make([]*ethPeer, 0, len(txset))
+	for peer := range txset {
+		sortedPeers = append(sortedPeers, peer)
+	}
+	sort.SliceStable(sortedPeers, func (i, j int) bool {
+		return sortedPeers[i].Score() > sortedPeers[j].Score()
+	})
+
+	for _, peer := range(sortedPeers) {
+		hashes := txset[peer]
 		directPeers++
 		directCount += len(hashes)
 		peer.AsyncSendTransactions(hashes)

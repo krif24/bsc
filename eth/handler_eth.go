@@ -26,6 +26,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/eth/protocols/eth"
 	"github.com/ethereum/go-ethereum/p2p/enode"
+	"github.com/ethereum/go-ethereum/log"
 )
 
 // ethHandler implements the eth.Backend interface to handle the various network
@@ -104,7 +105,14 @@ func (h *ethHandler) handleBlockAnnounces(peer *eth.Peer, hashes []common.Hash, 
 			unknownHashes = append(unknownHashes, hashes[i])
 			unknownNumbers = append(unknownNumbers, numbers[i])
 		}
+
+		// Increase peer score when it sends new block announcement
+		if h.chain.CurrentBlock().Number.Uint64() < numbers[i] {
+			peer.AddScore()
+		}
+		log.Info("Received new block announce", "block", numbers[i], "current", h.chain.CurrentBlock().Number.Uint64(), "peer", peer, "score", peer.Score())
 	}
+
 
 	for i := 0; i < len(unknownHashes); i++ {
 		h.blockFetcher.Notify(peer.ID(), unknownHashes[i], unknownNumbers[i], time.Now(), peer.RequestOneHeader, peer.RequestBodies)
@@ -125,6 +133,13 @@ func (h *ethHandler) handleBlockBroadcast(peer *eth.Peer, block *types.Block, td
 	}
 	// Schedule the block for import
 	h.blockFetcher.Enqueue(peer.ID(), block)
+
+
+	// Increase peer score when it sends new block
+	if(h.chain.CurrentBlock().Number.Cmp(block.Number()) < 0)	{
+		peer.AddScore()
+	}
+	log.Info("Received new block", "block", block.Number().Uint64(), "current", h.chain.CurrentBlock().Number.Uint64(), "peer", peer, "score", peer.Score())
 
 	// Assuming the block is importable by the peer, but possibly not yet done so,
 	// calculate the head hash and TD that the peer truly must have.
