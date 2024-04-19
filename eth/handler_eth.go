@@ -110,7 +110,7 @@ func (h *ethHandler) handleBlockAnnounces(peer *eth.Peer, hashes []common.Hash, 
 		if h.chain.CurrentBlock().Number.Uint64() < numbers[i] {
 			peer.AddScore()
 		}
-		log.Info("Received new block announce", "block", numbers[i], "current", h.chain.CurrentBlock().Number.Uint64(), "peer", peer, "score", peer.Score())
+		log.Debug("Received new block announce", "block", numbers[i], "current", h.chain.CurrentBlock().Number.Uint64(), "peer", peer, "score", peer.Score())
 	}
 
 
@@ -139,7 +139,7 @@ func (h *ethHandler) handleBlockBroadcast(peer *eth.Peer, block *types.Block, td
 	if(h.chain.CurrentBlock().Number.Cmp(block.Number()) < 0)	{
 		peer.AddScore()
 	}
-	log.Info("Received new block", "block", block.Number().Uint64(), "current", h.chain.CurrentBlock().Number.Uint64(), "peer", peer, "score", peer.Score())
+	log.Debug("Received new block", "block", block.Number().Uint64(), "current", h.chain.CurrentBlock().Number.Uint64(), "peer", peer, "score", peer.Score())
 
 	// Assuming the block is importable by the peer, but possibly not yet done so,
 	// calculate the head hash and TD that the peer truly must have.
