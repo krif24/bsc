@@ -108,7 +108,9 @@ func (h *ethHandler) handleBlockAnnounces(peer *eth.Peer, hashes []common.Hash, 
 
 		// Increase peer score when it sends new block announcement
 		if h.chain.CurrentBlock().Number.Uint64() < numbers[i] {
-			peer.AddScore()
+			peer.AddScore(1.0)
+		} else if h.chain.CurrentBlock().Number.Uint64() == numbers[i] {
+			peer.AddScore(0.25)
 		}
 		log.Debug("Received new block announce", "block", numbers[i], "current", h.chain.CurrentBlock().Number.Uint64(), "peer", peer, "score", peer.Score())
 	}
@@ -136,8 +138,10 @@ func (h *ethHandler) handleBlockBroadcast(peer *eth.Peer, block *types.Block, td
 
 
 	// Increase peer score when it sends new block
-	if(h.chain.CurrentBlock().Number.Cmp(block.Number()) < 0)	{
-		peer.AddScore()
+	if c := h.chain.CurrentBlock().Number.Cmp(block.Number()); c < 0	{
+		peer.AddScore(1.0)
+	} else if c == 0 {
+		peer.AddScore(0.25)
 	}
 	log.Debug("Received new block", "block", block.Number().Uint64(), "current", h.chain.CurrentBlock().Number.Uint64(), "peer", peer, "score", peer.Score())
 
