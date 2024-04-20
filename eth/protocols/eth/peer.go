@@ -76,7 +76,7 @@ type Peer struct {
 	lagging bool        // lagging peer is still connected, but won't be used to sync.
 	head    common.Hash // Latest advertised head block hash
 	td      *big.Int    // Latest advertised head block total difficulty
-	score	float32		// Peer score
+	score	float32		// Peer block broadcasting performance score
 
 	knownBlocks     *knownCache            // Set of block hashes known to be known by this peer
 	queuedBlocks    chan *blockPropagation // Queue of blocks to broadcast to the peer
@@ -161,10 +161,10 @@ func (p *Peer) MarkLagging() {
 	p.lagging = true
 }
 
-func (p *Peer) AddScore() {
+func (p *Peer) AddScore(score float32) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
-	p.score = p.score*0.97 + 0.03
+	p.score = p.score*0.97 + 0.03*score
 }
 
 func (p *Peer) Score() float32 {
