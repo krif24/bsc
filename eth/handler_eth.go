@@ -68,12 +68,15 @@ func (h *ethHandler) Handle(peer *eth.Peer, packet eth.Packet) error {
 		return h.handleBlockBroadcast(peer, packet.Block, packet.TD)
 
 	case *eth.NewPooledTransactionHashesPacket66:
+		peer.UpdateTxScore()
 		return h.txFetcher.Notify(peer.ID(), *packet)
 
 	case *eth.NewPooledTransactionHashesPacket68:
+		peer.UpdateTxScore()
 		return h.txFetcher.Notify(peer.ID(), packet.Hashes)
 
 	case *eth.TransactionsPacket:
+		peer.UpdateTxScore()
 		return h.txFetcher.Enqueue(peer.ID(), *packet, false)
 
 	case *eth.PooledTransactionsPacket:
