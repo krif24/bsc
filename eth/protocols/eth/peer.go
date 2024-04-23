@@ -20,6 +20,7 @@ import (
 	"math/big"
 	"math/rand"
 	"sync"
+	"time"
 
 	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/ethereum/go-ethereum/common"
@@ -77,6 +78,8 @@ type Peer struct {
 	head    common.Hash // Latest advertised head block hash
 	td      *big.Int    // Latest advertised head block total difficulty
 	score	float32		// Peer block broadcasting performance score
+	txScore float64		// Peer TX broadcasting performance score
+	lastTxTs		time.Time	// Timestamp of last TX announce/broadcast
 
 	knownBlocks     *knownCache            // Set of block hashes known to be known by this peer
 	queuedBlocks    chan *blockPropagation // Queue of blocks to broadcast to the peer
@@ -171,6 +174,23 @@ func (p *Peer) Score() float32 {
 	p.lock.RLock()
 	defer p.lock.RUnlock()
 	return p.score
+}
+
+func (p *Peer) UpdateTxScore()	{
+	p.lock.Lock()
+	defer p.lock.Unlock()
+
+	if !p.lastTxTs.IsZero()	{
+		delay := time.Since(p.lastTxTs).Seconds()
+		p.txScore = p.txScore*0.998 + 0.002/delay		// Exponential smoothing of amount of transactions per second
+	}
+	p.lastTxTs = time.Now()
+}
+
+func (p *Peer) TxScore() float64 {
+	p.lock.RLock()
+	defer p.lock.RUnlock()
+	return p.txScore
 }
 
 // Head retrieves the current head hash and total difficulty of the peer.

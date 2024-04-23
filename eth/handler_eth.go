@@ -69,15 +69,16 @@ func (h *ethHandler) Handle(peer *eth.Peer, packet eth.Packet) error {
 		return h.handleBlockBroadcast(peer, packet)
 
 	case *eth.NewPooledTransactionHashesPacket:
+		peer.UpdateTxScore()
 		return h.txFetcher.Notify(peer.ID(), packet.Types, packet.Sizes, packet.Hashes)
 
 	case *eth.TransactionsPacket:
+		peer.UpdateTxScore()
 		for _, tx := range *packet {
 			if tx.Type() == types.BlobTxType {
 				return errors.New("disallowed broadcast blob transaction")
 			}
 		}
-		return h.txFetcher.Enqueue(peer.ID(), *packet, false)
 
 	case *eth.PooledTransactionsResponse:
 		return h.txFetcher.Enqueue(peer.ID(), *packet, true)

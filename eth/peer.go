@@ -31,6 +31,7 @@ import (
 type ethPeerInfo struct {
 	Version uint `json:"version"` // Ethereum protocol version negotiated
 	Score	float32 `json:"score"`	// Score for block broadcasting performance
+	TxScore	float64 `json:"tx_score"`  // Score for TX broadcasting perfomance
 }
 
 // ethPeer is a wrapper around eth.Peer to maintain a few extra metadata.
@@ -46,6 +47,7 @@ func (p *ethPeer) info() *ethPeerInfo {
 	return &ethPeerInfo{
 		Version: p.Version(), 
 		Score: p.Score(),
+		TxScore: p.TxScore(),
 	}
 }
 
