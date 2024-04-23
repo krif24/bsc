@@ -859,6 +859,7 @@ func (h *handler) BroadcastTransactions(txs types.Transactions) {
 
 		var numDirect int
 		var numAnno int
+		var isLocal	bool
 
 		numAnno = int(math.Sqrt(float64(len(peers))))
 		if tx.Size() <= txMaxBroadcastSize {
@@ -868,6 +869,7 @@ func (h *handler) BroadcastTransactions(txs types.Transactions) {
 		// Broadcast local tx to all peers
 		from, _ := types.Sender(signer, tx)
 		if _, ok := locals[from]; ok {
+			isLocal = true
 			if numDirect > 0 {
 				numDirect = len(peers)
 				numAnno = 0
@@ -879,11 +881,16 @@ func (h *handler) BroadcastTransactions(txs types.Transactions) {
 
 		// Send the tx unconditionally to a subset of our peers
 		for _, peer := range peers[:numDirect] {
+			if (isLocal && (peer.Score() == 0)) || (!isLocal && (peer.TxScore() == 0))	{    // Skip peers with zero block broadcast score when doing local txs broadcast
+				continue
+			}
 			txset[peer] = append(txset[peer], tx.Hash())
 		}
 		// For the remaining peers, send announcement only
 		for _, peer := range peers[len(peers)-numAnno:] {
-			annos[peer] = append(annos[peer], tx.Hash())
+			if peer.TxScore() > 0 {
+				annos[peer] = append(annos[peer], tx.Hash())
+			}
 		}
 	}
 
