@@ -19,6 +19,7 @@ package eth
 import (
 	"math/big"
 	"math/rand"
+	"math"
 	"sync"
 	"time"
 
@@ -77,9 +78,10 @@ type Peer struct {
 	lagging bool        // lagging peer is still connected, but won't be used to sync.
 	head    common.Hash // Latest advertised head block hash
 	td      *big.Int    // Latest advertised head block total difficulty
-	score	float32		// Peer block broadcasting performance score
+	score	float64		// Peer block broadcasting performance score
 	txScore float64		// Peer TX broadcasting performance score
 	lastTxTs		time.Time	// Timestamp of last TX announce/broadcast
+	lastAnnouncedBlock	uint64	// Last block broadcasted by peer
 
 	knownBlocks     *knownCache            // Set of block hashes known to be known by this peer
 	queuedBlocks    chan *blockPropagation // Queue of blocks to broadcast to the peer
@@ -164,13 +166,17 @@ func (p *Peer) MarkLagging() {
 	p.lagging = true
 }
 
-func (p *Peer) AddScore(score float32) {
+func (p *Peer) AddScore(score float64, blockNumber uint64) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
-	p.score = p.score*0.97 + 0.03*score
+	blockDiff := float64(blockNumber - p.lastAnnouncedBlock)
+	if blockDiff > 0 {
+		p.score = p.score*math.Pow(0.97, blockDiff) + 0.03*score
+		p.lastAnnouncedBlock = blockNumber
+	}
 }
 
-func (p *Peer) Score() float32 {
+func (p *Peer) Score() float64 {
 	p.lock.RLock()
 	defer p.lock.RUnlock()
 	return p.score
