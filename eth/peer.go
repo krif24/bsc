@@ -30,7 +30,7 @@ import (
 // about a connected peer.
 type ethPeerInfo struct {
 	Version uint `json:"version"` // Ethereum protocol version negotiated
-	Score	float32 `json:"score"`	// Score for block broadcasting performance
+	Score	float64 `json:"score"`	// Score for block broadcasting performance
 	TxScore	float64 `json:"tx_score"`  // Score for TX broadcasting perfomance
 }
 

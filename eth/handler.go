@@ -932,8 +932,8 @@ func (h *handler) ReannounceTransactions(txs types.Transactions) {
 	for _, peer := range peers {
 		peer.AsyncSendPooledTransactionHashes(hashes)
 	}
-	log.Debug("Transaction reannounce", "txs", len(txs),
-		"announce packs", peersCount, "announced hashes", peersCount*uint(len(hashes)))
+	// log.Debug("Transaction reannounce", "txs", len(txs),
+	// 	"announce packs", peersCount, "announced hashes", peersCount*uint(len(hashes)))
 }
 
 // BroadcastVote will propagate a batch of votes to all peers
