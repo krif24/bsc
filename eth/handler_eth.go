@@ -27,7 +27,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/eth/protocols/eth"
 	"github.com/ethereum/go-ethereum/p2p/enode"
-	// "github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/log"
 )
 
 // ethHandler implements the eth.Backend interface to handle the various network
@@ -79,6 +79,7 @@ func (h *ethHandler) Handle(peer *eth.Peer, packet eth.Packet) error {
 				return errors.New("disallowed broadcast blob transaction")
 			}
 		}
+		return h.txFetcher.Enqueue(peer.ID(), *packet, false)
 
 	case *eth.PooledTransactionsResponse:
 		return h.txFetcher.Enqueue(peer.ID(), *packet, true)
@@ -114,7 +115,7 @@ func (h *ethHandler) handleBlockAnnounces(peer *eth.Peer, hashes []common.Hash, 
 		} else if h.chain.CurrentBlock().Number.Uint64() == numbers[i] {
 			peer.AddScore(0.25, numbers[i])
 		}
-		// log.Debug("Received new block announce", "block", numbers[i], "current", h.chain.CurrentBlock().Number.Uint64(), "peer", peer, "score", peer.Score())
+		log.Debug("Received new block announce", "block", numbers[i], "current", h.chain.CurrentBlock().Number.Uint64(), "peer", peer, "score", peer.Score())
 	}
 
 
@@ -150,7 +151,7 @@ func (h *ethHandler) handleBlockBroadcast(peer *eth.Peer, packet *eth.NewBlockPa
 	} else if c == 0 {
 		peer.AddScore(0.25, block.NumberU64())
 	}
-	// log.Debug("Received new block", "block", block.Number().Uint64(), "current", h.chain.CurrentBlock().Number.Uint64(), "peer", peer, "score", peer.Score())
+	log.Debug("Received new block", "block", block.Number().Uint64(), "current", h.chain.CurrentBlock().Number.Uint64(), "peer", peer, "score", peer.Score())
 
 	// Assuming the block is importable by the peer, but possibly not yet done so,
 	// calculate the head hash and TD that the peer truly must have.
